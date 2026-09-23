@@ -30,7 +30,15 @@ class HTTPTest(unittest.TestCase):
 
     def test_static_ui_and_metadata(self):
         with urlopen(self.base, timeout=5) as response:
-            self.assertIn("EventMatch", response.read().decode())
+            html = response.read().decode()
+        for text in ("eventmatch", "Параметры события", "Бюджет на подрядчика",
+                     "Дополнительные условия", "Почему подходит", "Цена «от»",
+                     "aria-live=\"polite\"", "Категории нет в этом городе",
+                     "Подходящих вариантов нет", "no_category_in_city",
+                     "result.status==='matched'",
+                     "const article=document.createElement('article');article.className='contractor';"):
+            with self.subTest(text=text):
+                self.assertIn(text, html)
         with urlopen(self.base + "/metadata", timeout=5) as response:
             self.assertEqual(json.load(response)["calendar_end"], "2026-12-31")
 
