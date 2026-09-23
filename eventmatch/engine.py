@@ -12,7 +12,7 @@ import re
 
 from .models import END, START, Request
 
-POLICY_VERSION = "rules-lexical-v1"
+POLICY_VERSION = "rules-lexical-v2"
 REASONS = {
     "busy": "заняты на дату",
     "budget": "стартовая цена выше бюджета",
@@ -30,6 +30,28 @@ ROOTS = {
     "юбилей": ("юбиле",),
     "день рождения": ("рождени",),
 }
+GENERIC_ROOTS = (
+    "луч", "топ", "профессион", "качеств", "высок", "незабыва", "неповтор",
+    "идеал", "уникал", "индивидуал", "опыт", "отлич", "прекрас", "люб",
+    "впечатлен", "мастер", "команд", "услуг", "подход", "событ", "мероприят",
+    "праздник", "вечер", "эмоци", "выбор", "ваш", "наш", "клиент", "уров",
+    "стиль", "работ", "проведен", "созда",
+    "алмат", "астан", "казахстан", "ведущ", "фотограф", "флорист", "декорат",
+    "ансамбл", "артист", "подрядчик", "отел", "банкет", "ресторан", "центр", "зал",
+    "свад", "молодож", "невест", "бракосочет", "той", "казах", "традиц",
+    "националь", "корпоратив", "бизнес", "делов", "бренд", "конференц", "форум",
+    "презентац", "юбиле", "рождени",
+)
+PROMOTIONAL_CLAIM = re.compile(
+    r"\b(?:лучш\w*|топ(?:[- ]?\d+)?|профессиональн\w*|качественн\w*|"
+    r"высок\w+\s+уров\w*|незабываем\w*|неповторим\w*|идеальн\w*|"
+    r"уникальн\w*|индивидуальн\w+\s+подход)\b"
+)
+REFERENCE_LIST = re.compile(r"\b(?:среди (?:наших )?клиентов|клиенты и партнеры|сотрудничали)\b")
+EXCLUSION_ACTION_ROOTS = (
+    "бер", "работ", "провод", "подход", "обслуж", "выступ", "организ", "приним",
+    "дел", "занима", "предостав", "участв",
+)
 
 
 def normalize(value):
@@ -44,6 +66,58 @@ def hits(value, event_format):
     words = re.findall(r"[а-яa-z]+", normalize(value))
     return tuple(root for root in ROOTS[event_format]
                  if any(word.startswith(root) for word in words))
+
+
+def evidence_hits(value, event_format):
+    # Brand mentions may affect ranking, but alone do not explain corporate fit.
+    return tuple(root for root in hits(value, event_format)
+                 if not (event_format == "корпоратив" and root == "бренд"))
+
+
+def category_hits(value, category):
+    words = re.findall(r"[а-яa-z]+", normalize(value))
+    roots = tokens(category)
+    return sum(any(word.startswith(root) for word in words) for root in roots)
+
+
+def evidence_terms(value):
+    terms = {word for word in tokens(value)
+             if not any(word.startswith(root) for root in GENERIC_ROOTS)}
+    terms.update(re.findall(r"\b\d+(?:[.,]\d+)?\b", value))
+    return terms
+
+
+def useful_evidence(value, event_format):
+    """Reject generic praise and sentences that appear to deny the requested format."""
+    normalized = normalize(value)
+    if REFERENCE_LIST.search(normalized):
+        return False
+    words = re.findall(r"[а-яa-z]+", normalized)
+    roots = ROOTS[event_format]
+    format_positions = [index for index, word in enumerate(words)
+                        if any(word.startswith(root) for root in roots)]
+    action_positions = [index for index, word in enumerate(words)
+                        if any(word.startswith(root) for root in EXCLUSION_ACTION_ROOTS)]
+    for index, word in enumerate(words):
+        if word != "не":
+            continue
+        if index + 1 < len(words):
+            next_word = words[index + 1]
+            if next_word.startswith(("только", "просто", "единствен", "огранич", "исключ",
+                                     "отказыва", "запрещ")):
+                continue
+        nearby_formats = [position for position in format_positions if abs(position - index) <= 4]
+        nearby_actions = [position for position in action_positions if abs(position - index) <= 4]
+        is_adjacent = min((abs(position - index) for position in nearby_formats), default=99) <= 1
+        if nearby_formats and (nearby_actions or is_adjacent):
+            return False
+        if (index + 1 < len(words) and words[index + 1] == "для"
+                and any(abs(position - index) <= 4 for position in format_positions)):
+            return False
+    terms = evidence_terms(value)
+    if PROMOTIONAL_CLAIM.search(normalized) and len(terms) < 2:
+        return False
+    return bool(terms)
 
 
 def failures(profile, request):
@@ -85,16 +159,18 @@ def source_excerpt(profile, request, peers):
         if len(stripped) > 220:
             cut = stripped.rfind(" ", 0, 220)
             stripped = stripped[:cut if cut > 0 else 220]
-        words = tokens(stripped)
+        if not useful_evidence(stripped, request.event_format):
+            continue
+        words = evidence_terms(stripped)
         rarity = sum(1 for word in words if document_frequency[word] == 1)
         # Quantize a ratio; don't reward verbosity or depend on set iteration order.
         distinctiveness = 1000 * rarity // max(1, len(words))
-        key = (-len(hits(stripped, request.event_format)), -distinctiveness, start)
+        key = (-len(evidence_hits(stripped, request.event_format)),
+               -category_hits(stripped, request.category), -len(words), -distinctiveness, start)
         candidates.append((key, start, start + len(stripped)))
-    if candidates:
-        _, start, end = min(candidates)
-    else:
-        start, end = 0, min(len(description), 220)
+    if not candidates:
+        return None
+    _, start, end = min(candidates)
     quote = description[start:end]
     return {"field": "description", "start": start, "end": end, "quote": quote}
 
@@ -117,8 +193,9 @@ def make_card(profile, request, peers):
             facts.append("ограничение по часам присутствия неприменимо")
         else:
             facts.append(f"до {profile.max_hours:g} ч при запросе {request.duration_hours:g} ч")
-    text = "; ".join(facts) + f". В описании профиля: «{evidence['quote']}» ."
-    text = text.replace("» .", "».")
+    text = "; ".join(facts) + "."
+    if evidence:
+        text += f" В описании профиля: «{evidence['quote']}»."
     labels = ["Синтетический профиль организаторов" if profile.synthetic
               else "Исходный анонимизированный профиль"]
     if profile.price_imputed:
@@ -137,8 +214,7 @@ def make_card(profile, request, peers):
              "budget_kzt": request.budget_kzt},
             {"field": "languages", "value": list(profile.languages), "requested": request.language},
             {"field": "max_hours", "value": profile.max_hours, "requested": request.duration_hours},
-            evidence,
-        ],
+        ] + ([evidence] if evidence else []),
         "ranking": {"lexical_hits": list(hits(profile.description, request.event_format)),
                     "price_tiebreak_kzt": profile.price_from_kzt, "id_tiebreak": profile.id},
         "provenance": {"synthetic": profile.synthetic, "city_imputed": profile.city_imputed,
