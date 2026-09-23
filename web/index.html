@@ -25,6 +25,11 @@
     <p class="hero-copy">Укажите условия заказа. Мы проверим свободную дату и покажем до трёх вариантов с конкретными причинами выбора.</p>
   </section>
 
+<section class="panel" style="padding:22px;margin-bottom:22px" aria-labelledby="chat-title">
+<h2 id="chat-title" style="margin-top:0">Опишите событие своими словами</h2>
+<form id="chat-form"><div class="field"><label for="message">Город, подрядчик, формат, дата с годом и бюджет</label><textarea id="message" rows="2" maxlength="4000" required style="font:inherit;padding:12px;border:1px solid var(--line);border-radius:8px;width:100%" placeholder="Ведущий в Алматы на корпоратив 12 октября 2026, бюджет 1,3 млн тенге"></textarea></div><button class="scenario" id="chat-submit">Отправить →</button> <button type="button" class="scenario" id="reset-chat">Новая заявка</button></form>
+<div id="chat-history" aria-live="polite"></div><p id="runtime-mode" class="fine-print"></p>
+</section>
   <main class="workspace">
     <aside class="panel request-panel" aria-labelledby="request-title">
       <div class="panel-heading"><h2 id="request-title">Параметры события</h2><span class="step">01 / ЗАПРОС</span></div>
@@ -137,7 +142,40 @@ async function init(){
   for(const [key,values] of Object.entries({city:meta.cities,category:meta.categories,event_format:meta.event_formats,language:meta.languages}))for(const value of values){const option=element('option',value,form.elements.namedItem(key));option.value=value;}
   for(const [title,request] of presets){const button=element('button',title,document.getElementById('presets'),'scenario');button.type='button';button.addEventListener('click',()=>{fill(request);form.requestSubmit();});}
   fill(base);
+  document.getElementById('runtime-mode').textContent=(meta.openai_configured?'Диалог подключён. ':'Диалог не настроен; доступна форма. ')+(meta.ranking_mode==='nvidia_semantic_artifact'?'Семантический подбор NVIDIA.':'Базовый подбор без NVIDIA.');
 }
+
+let sessionId=sessionStorage.getItem('eventmatch-session');
+document.getElementById('reset-chat').onclick=()=>{sessionId=null;sessionStorage.removeItem('eventmatch-session');document.getElementById('chat-history').replaceChildren();};
+document.getElementById('chat-form').addEventListener('submit',async e=>{
+ e.preventDefault();const button=document.getElementById('chat-submit');button.disabled=true;
+ const input=document.getElementById('message'),history=document.getElementById('chat-history');
+ element('p','Вы: '+input.value,history);
+ try{
+  const response=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:input.value,session_id:sessionId})});
+  const result=await response.json();
+  if(result.session_id){sessionId=result.session_id;sessionStorage.setItem('eventmatch-session',sessionId);}
+  if(!response.ok)throw new Error(result.message||'Не удалось получить ответ');
+  element('p',result.message||result.summary||'Готово',history);
+  if(result.cards)renderResult(result);
+  if(result.results){
+    const target=document.getElementById('result-content');target.replaceChildren();
+    for(const part of result.results){
+      const section=element('section','',target);element('h3',part.normalized_request.event_date,section);element('p',part.summary,section,'summary');
+      part.cards.forEach((card,index)=>section.append(renderCard(card,index)));
+    }
+    const labels={calendar_changed:'Изменилась занятость по календарю',top3_competition:'Допустим на обе даты; изменился состав top-3',other_constraints:'Не проходит другие условия'};
+    for(const change of result.changes)element('p',change.profile_id+': '+labels[change.reason],target,'fine-print');
+    document.getElementById('result-title').textContent='Сравнение дат';
+    document.getElementById('result-kicker').textContent=result.summary;
+    document.getElementById('result-count').textContent='2 даты';
+    document.getElementById('trace').textContent=JSON.stringify(result,null,2);document.getElementById('debug').hidden=false;
+  }
+  if(result.state)fill(Object.fromEntries(Object.keys(base).map(k=>[k,result.state[k]??''])));
+  input.value='';
+ }catch(error){element('p',error.message,history);}
+ finally{button.disabled=false;}
+});
 form.addEventListener('submit',async event=>{
   event.preventDefault();const submit=document.getElementById('submit');submit.disabled=true;submit.textContent='Проверяем условия…';
   document.getElementById('result-title').textContent='Проверяем каталог';document.getElementById('result-kicker').textContent='Сначала дата и обязательные условия, затем объяснения';document.getElementById('result-count').textContent='';

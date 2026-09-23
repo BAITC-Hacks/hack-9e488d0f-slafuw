@@ -1,0 +1,11 @@
+services:
+  eventmatch:
+    build: .
+    env_file: .env
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - eventmatch-state:/app/var
+    restart: unless-stopped
+volumes:
+  eventmatch-state:

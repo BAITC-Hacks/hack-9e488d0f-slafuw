@@ -172,7 +172,7 @@ def suggestions(profiles, request):
     return result
 
 
-def recommend(catalog, request):
+def recommend(catalog, request, ranker=None):
     if not isinstance(request, Request):
         request = Request.parse(request)
     cohort = [p for p in catalog.profiles
@@ -200,7 +200,7 @@ def recommend(catalog, request):
             eligible.append(profile)
     date_only = len(date_only_names)
     date_only_names.sort()
-    eligible.sort(key=lambda p: ranking_key(p, request))
+    eligible.sort(key=lambda p: ranker.key(p, request) if ranker else ranking_key(p, request))
     if not cohort:
         status = "no_category_in_city"
         summary = f"В каталоге города «{request.city}» нет категории «{request.category}»"
@@ -221,6 +221,8 @@ def recommend(catalog, request):
                     f"; без проверки даты прошли бы {len(eligible) + date_only}")
     fingerprint_input = {"request": request.to_dict(), "dataset": catalog.sha256,
                          "policy": POLICY_VERSION}
+    if ranker:
+        fingerprint_input['semantic_artifact'] = ranker.metadata['artifact_sha256']
     fingerprint = sha256(json.dumps(fingerprint_input, ensure_ascii=False, sort_keys=True,
                                     separators=(",", ":")).encode()).hexdigest()
     return {

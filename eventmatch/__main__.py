@@ -16,12 +16,15 @@ def main():
     rec.add_argument("--request", type=Path, required=True)
     server = commands.add_parser("serve", help="Локальный HTTP API и демоинтерфейс")
     server.add_argument("--port", type=int, default=8000)
+    server.add_argument("--host", default="127.0.0.1")
     args = parser.parse_args()
+    from .config import load_env
+    load_env()
     try:
         catalog = load_catalog()
         if args.command == "serve":
             from .server import serve
-            serve(catalog, args.port)
+            serve(catalog, args.port, args.host)
         else:
             request = json.loads(args.request.read_text(encoding="utf-8-sig"))
             print(json.dumps(recommend(catalog, request), ensure_ascii=False, indent=2))
