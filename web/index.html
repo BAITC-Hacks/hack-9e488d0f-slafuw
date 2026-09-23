@@ -12,6 +12,63 @@
 @media(max-width:680px){.shell{padding:0 15px 34px}.topbar{height:64px}.top-note{max-width:150px;text-align:right;font-size:10px}.hero{display:block;padding:25px 0 19px}.hero h1{font-size:33px}.hero-copy{margin-top:9px;font-size:13px}.workspace{grid-template-columns:1fr;gap:14px}.request-panel{position:static;padding:18px}.field-grid{grid-template-columns:1fr 1fr}.result-panel{min-height:330px;padding:17px}.result-head{gap:8px}.result-title{font-size:16px}.empty-state{min-height:240px;padding:22px}.contractor{padding:15px}.contractor h3{font-size:18px}.price{font-size:15px}.footer{display:block}.footer span{display:block}.footer span:last-child{text-align:left;margin-top:3px}}
 @media(max-width:380px){.shell{padding-right:11px;padding-left:11px}.field-grid{grid-template-columns:1fr}.request-panel{padding:15px}.card-top{gap:8px}.rank-name{gap:8px}.result-count{font-size:10px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+.calendar-box{
+  margin-top:16px;
+  padding-top:14px;
+  border-top:1px solid #ebebe5;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:end;
+  gap:9px;
+}
+
+.calendar-label{
+  display:grid;
+  gap:4px;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:700;
+}
+
+.calendar-time{
+  min-height:38px;
+  padding:7px 9px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:white;
+  color:var(--ink);
+}
+
+.calendar-button{
+  min-height:38px;
+  padding:8px 13px;
+  border:0;
+  border-radius:8px;
+  background:var(--green);
+  color:white;
+  font-size:11px;
+  font-weight:700;
+}
+
+.calendar-button:hover{
+  background:#1b4937;
+}
+
+.calendar-button:disabled{
+  opacity:.6;
+  cursor:wait;
+}
+
+.calendar-status{
+  width:100%;
+  color:var(--green);
+  font-size:11px;
+}
+
+.calendar-link{
+  color:var(--green);
+  font-weight:700;
+}
 </style>
 <style>
 .agent-panel{padding:20px 23px;margin-bottom:22px}.agent-panel h2{margin:0 0 8px;font-size:17px}.chat-row{display:flex;gap:12px;align-items:end}.chat-row .field{flex:1;margin:0}.chat-row button{width:auto;min-width:130px}.chat-row textarea{font:inherit;resize:vertical;min-height:76px;width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:white}.chat-log{max-height:260px;overflow:auto;white-space:pre-wrap}.chat-log p{margin:10px 0;padding:9px 12px;background:var(--green-soft);border-radius:8px}.chat-log .user-message{background:#f1f0e9}.comparison{padding-top:16px;border-top:1px solid var(--line);margin-top:16px}.comparison button{width:100%;padding:8px;border:1px solid var(--green);border-radius:8px;background:var(--green-soft);color:var(--green)}.mode{font-size:12px;color:var(--muted);margin:8px 0}.compare-section{margin:18px 0;border-top:1px solid var(--line)}.match-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.match-tags span{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:2px 6px}@media(max-width:680px){.chat-row{display:block}.chat-row button{margin-top:10px;width:100%}}
@@ -105,29 +162,186 @@ const presets=[
 function element(tag,text,parent,className){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(className)node.className=className;parent.append(node);return node;}
 function fill(request){for(const [key,value] of Object.entries(request)){const field=form.elements.namedItem(key);if(field)field.value=value??'';}}
 function money(value){return Number(value).toLocaleString('ru-RU');}
+function formatCalendarDate(date){
+  const pad=value=>String(value).padStart(2,'0');
+
+  return (
+    `${date.getFullYear()}-`+
+    `${pad(date.getMonth()+1)}-`+
+    `${pad(date.getDate())}T`+
+    `${pad(date.getHours())}:`+
+    `${pad(date.getMinutes())}:00+05:00`
+  );
+}
 function renderCard(card,index){
-  const article=document.createElement('article');article.className='contractor';
+  const article=document.createElement('article');
+  article.className='contractor';
+
   const top=element('div','',article,'card-top');
   const rankName=element('div','',top,'rank-name');
+
   element('span',String(index+1).padStart(2,'0'),rankName,'rank');
+
   const titleWrap=element('div','',rankName);
   element('h3',card.name,titleWrap);
   element('p',`${card.category} · ${card.city}`,titleWrap,'card-subtitle');
+
   const price=element('div','',top,'price');
   element('span',`${money(card.price_from_kzt)} ₸`,price);
   element('small','цена от',price);
+
   element('p','Почему подходит',article,'reason-label');
+
   const marker=' В описании профиля: ';
   const splitAt=card.explanation.indexOf(marker);
-  const facts=splitAt>=0?card.explanation.slice(0,splitAt):card.explanation;
+  const facts=splitAt>=0
+    ? card.explanation.slice(0,splitAt)
+    : card.explanation;
+
   element('p',facts,article,'explanation');
-  const source=(card.evidence||[]).find(item=>item.field==='description');
-  if(source?.quote){const quote=element('blockquote','',article,'quote');element('span','Из профиля подрядчика',quote,'quote-label');element('span',`«${source.quote}»`,quote);}
-  if(card.tags){const tags=element('div','',article,'match-tags');for(const tag of card.tags)element('span',tag,tags);}
+
+  const source=(card.evidence||[]).find(
+    item=>item.field==='description'
+  );
+
+  if(source?.quote){
+    const quote=element('blockquote','',article,'quote');
+    element('span','Из профиля подрядчика',quote,'quote-label');
+    element('span',`«${source.quote}»`,quote);
+  }
+
+  if(card.tags){
+    const tags=element('div','',article,'match-tags');
+
+    for(const tag of card.tags){
+      element('span',tag,tags);
+    }
+  }
+
   const badges=element('div','',article,'badges');
-  for(const label of card.provenance.labels){const kind=label.includes('Синтетический')?'synthetic':label.includes('проставлена')?'imputed':'';element('span',label,badges,`badge ${kind}`.trim());}
+
+  for(const label of card.provenance.labels){
+    const kind=label.includes('Синтетический')
+      ? 'synthetic'
+      : label.includes('проставлена')
+        ? 'imputed'
+        : '';
+
+    element('span',label,badges,`badge ${kind}`.trim());
+  }
+
+  // Google Calendar
+  const calendarBox=element('div','',article,'calendar-box');
+
+  const timeLabel=element(
+    'label',
+    'Время начала',
+    calendarBox,
+    'calendar-label'
+  );
+
+  const timeInput=document.createElement('input');
+  timeInput.type='time';
+  timeInput.value='18:00';
+  timeInput.className='calendar-time';
+  timeLabel.append(timeInput);
+
+  const calendarButton=element(
+    'button',
+    'Добавить в Google Calendar',
+    calendarBox,
+    'calendar-button'
+  );
+
+  calendarButton.type='button';
+
+  const calendarStatus=element(
+    'span',
+    '',
+    calendarBox,
+    'calendar-status'
+  );
+
+  calendarButton.addEventListener('click',async()=>{
+    const date=form.elements.namedItem('event_date').value;
+    const duration=
+      Number(form.elements.namedItem('duration_hours').value)||1;
+
+    if(!date){
+      calendarStatus.textContent='Сначала выберите дату.';
+      return;
+    }
+
+    if(!timeInput.value){
+      calendarStatus.textContent='Выберите время.';
+      return;
+    }
+
+    const start=new Date(
+      `${date}T${timeInput.value}:00+05:00`
+    );
+
+    const end=new Date(
+      start.getTime()+duration*60*60*1000
+    );
+
+    const startTime=
+      `${date}T${timeInput.value}:00+05:00`;
+
+    const endTime=formatCalendarDate(end);
+
+    calendarButton.disabled=true;
+    calendarButton.textContent='Добавляем…';
+    calendarStatus.textContent='';
+
+    try{
+      const response=await fetch('/calendar/event',{
+        method:'POST',
+        headers:headers(),
+        body:JSON.stringify({
+          title:`EventMatch — ${card.name}`,
+          start_time:startTime,
+          end_time:endTime,
+          description:
+            `Подрядчик: ${card.name}\n`+
+            `Категория: ${card.category}\n`+
+            `Цена от: ${money(card.price_from_kzt)} ₸`,
+          location:card.city
+        })
+      });
+
+      const result=await response.json();
+
+      if(!response.ok){
+        throw new Error(
+          result.message||'Не удалось создать событие'
+        );
+      }
+
+      calendarStatus.textContent='Добавлено в календарь ✓';
+
+      if(result.event?.link){
+        const link=document.createElement('a');
+        link.href=result.event.link;
+        link.target='_blank';
+        link.rel='noopener noreferrer';
+        link.textContent='Открыть событие';
+        link.className='calendar-link';
+
+        calendarStatus.append(' · ',link);
+      }
+
+    }catch(error){
+      calendarStatus.textContent=`Ошибка: ${error.message}`;
+    }finally{
+      calendarButton.disabled=false;
+      calendarButton.textContent='Добавить в Google Calendar';
+    }
+  });
+
   return article;
 }
+
 function renderResult(result){
   if(result.session_id)sessionId=result.session_id;
   const content=document.getElementById('result-content');content.replaceChildren();
