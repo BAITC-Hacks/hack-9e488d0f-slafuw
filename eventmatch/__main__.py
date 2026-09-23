@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 
 from .catalog import load_catalog
+from .config import load_local_env
 from .engine import recommend
 
 
@@ -14,14 +15,27 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     rec = commands.add_parser("recommend", help="Подбор по JSON-файлу запроса")
     rec.add_argument("--request", type=Path, required=True)
+    agent = commands.add_parser("agent", help="Подбор с настроенными провайдерами и журналом")
+    agent.add_argument("--request", type=Path, required=True)
     server = commands.add_parser("serve", help="Локальный HTTP API и демоинтерфейс")
     server.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
     try:
+        if args.command in ("serve", "agent"):
+            load_local_env()
         catalog = load_catalog()
         if args.command == "serve":
             from .server import serve
             serve(catalog, args.port)
+        elif args.command == "agent":
+            from .agent import EventMatchAgent
+            from .service import EventMatchService
+            service = EventMatchService.from_env(catalog)
+            try:
+                request = json.loads(args.request.read_text(encoding="utf-8-sig"))
+                print(json.dumps(EventMatchAgent.from_env(service).structured(request), ensure_ascii=False, indent=2))
+            finally:
+                service.store.close()
         else:
             request = json.loads(args.request.read_text(encoding="utf-8-sig"))
             print(json.dumps(recommend(catalog, request), ensure_ascii=False, indent=2))

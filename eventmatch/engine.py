@@ -172,9 +172,17 @@ def suggestions(profiles, request):
     return result
 
 
-def recommend(catalog, request):
+def recommend(catalog, request, ranker=None):
     if not isinstance(request, Request):
         request = Request.parse(request)
+    cities = {normalize(p.city): p.city for p in catalog.profiles}
+    categories = {normalize(c): c for p in catalog.profiles for c in p.categories}
+    if normalize(request.city) not in cities:
+        raise ValueError("city: неизвестный город каталога")
+    if normalize(request.category) not in categories:
+        raise ValueError("category: неизвестная категория каталога")
+    request = replace(request, city=cities[normalize(request.city)],
+                      category=categories[normalize(request.category)])
     cohort = [p for p in catalog.profiles
               if normalize(p.city) == normalize(request.city)
               and any(normalize(c) == normalize(request.category) for c in p.categories)]
@@ -200,7 +208,8 @@ def recommend(catalog, request):
             eligible.append(profile)
     date_only = len(date_only_names)
     date_only_names.sort()
-    eligible.sort(key=lambda p: ranking_key(p, request))
+    eligible.sort(key=lambda p: (-ranker.score(p, request), p.price_from_kzt, p.id)
+                  if ranker else ranking_key(p, request))
     if not cohort:
         status = "no_category_in_city"
         summary = f"В каталоге города «{request.city}» нет категории «{request.category}»"
@@ -220,7 +229,7 @@ def recommend(catalog, request):
         summary += (f". Только из-за занятости на {request.event_date} исключены {date_only}{names}"
                     f"; без проверки даты прошли бы {len(eligible) + date_only}")
     fingerprint_input = {"request": request.to_dict(), "dataset": catalog.sha256,
-                         "policy": POLICY_VERSION}
+                         "policy": ranker.metadata() if ranker else POLICY_VERSION}
     fingerprint = sha256(json.dumps(fingerprint_input, ensure_ascii=False, sort_keys=True,
                                     separators=(",", ":")).encode()).hexdigest()
     return {

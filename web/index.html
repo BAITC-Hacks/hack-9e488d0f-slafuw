@@ -13,6 +13,9 @@
 @media(max-width:380px){.shell{padding-right:11px;padding-left:11px}.field-grid{grid-template-columns:1fr}.request-panel{padding:15px}.card-top{gap:8px}.rank-name{gap:8px}.result-count{font-size:10px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style>
+<style>
+.agent-panel{padding:20px 23px;margin-bottom:22px}.agent-panel h2{margin:0 0 8px;font-size:17px}.chat-row{display:flex;gap:12px;align-items:end}.chat-row .field{flex:1;margin:0}.chat-row button{width:auto;min-width:130px}.chat-row textarea{font:inherit;resize:vertical;min-height:76px;width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:white}.chat-log{max-height:260px;overflow:auto;white-space:pre-wrap}.chat-log p{margin:10px 0;padding:9px 12px;background:var(--green-soft);border-radius:8px}.chat-log .user-message{background:#f1f0e9}.comparison{padding-top:16px;border-top:1px solid var(--line);margin-top:16px}.comparison button{width:100%;padding:8px;border:1px solid var(--green);border-radius:8px;background:var(--green-soft);color:var(--green)}.mode{font-size:12px;color:var(--muted);margin:8px 0}.compare-section{margin:18px 0;border-top:1px solid var(--line)}.match-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.match-tags span{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:2px 6px}@media(max-width:680px){.chat-row{display:block}.chat-row button{margin-top:10px;width:100%}}
+</style>
 </head>
 <body>
 <div class="shell">
@@ -23,6 +26,17 @@
   <section class="hero" aria-labelledby="page-title">
     <div><p class="eyebrow">Меньше поиска · больше ясности</p><h1 id="page-title">Найдём тех, кто подходит</h1></div>
     <p class="hero-copy">Укажите условия заказа. Мы проверим свободную дату и покажем до трёх вариантов с конкретными причинами выбора.</p>
+  </section>
+
+  <section class="panel agent-panel" aria-labelledby="agent-title">
+    <h2 id="agent-title">Опишите заказ своими словами</h2>
+    <p class="mode" id="mode">Проверяем режим сервиса…</p>
+    <div class="chat-log" id="chat-log" role="log" aria-live="polite"></div>
+    <form id="chat-form" class="chat-row">
+      <div class="field"><label for="message">Сообщение агенту</label><textarea id="message" maxlength="6000" required placeholder="Нужен ведущий в Алматы на корпоратив 12 октября 2026, бюджет 1,3 млн тенге, на 6 часов, русский язык"></textarea></div>
+      <button class="submit" id="chat-submit" type="submit">Отправить →</button>
+    </form>
+    <p class="fine-print">Можно изменить одно условие или спросить «почему эти варианты?». Год даты укажите явно; язык и часы — по желанию.</p>
   </section>
 
   <main class="workspace">
@@ -45,6 +59,10 @@
         </details>
         <button class="submit" type="submit" id="submit">Показать подходящих <span aria-hidden="true">→</span></button>
       </form>
+      <div class="comparison">
+        <div class="field"><label for="date_b">Вторая дата для сравнения</label><input id="date_b" type="date" min="2026-09-23" max="2026-12-31" value="2026-10-13"></div>
+        <button type="button" id="compare">Сравнить две даты</button>
+      </div>
       <p class="fine-print">Цена «от» — минимальная стоимость в каталоге, не итоговая смета. Подбор не бронирует дату.</p>
       <div class="scenarios">
         <p class="scenarios-title">Посмотреть на примерах</p>
@@ -70,6 +88,11 @@
 </div>
 <script>
 const form=document.getElementById('form');
+let sessionId=null;
+let requestPending=false;
+function headers(){return {'Content-Type':'application/json',...(sessionId?{'X-EventMatch-Session':sessionId}:{})};}
+function currentRequest(){const request=Object.fromEntries(new FormData(form));request.budget_kzt=Number(request.budget_kzt);request.duration_hours=request.duration_hours?Number(request.duration_hours):null;request.language=request.language||null;return request;}
+function setPending(value){requestPending=value;for(const id of ['submit','chat-submit','compare'])document.getElementById(id).disabled=value;}
 const base={city:'Алматы',event_date:'2026-10-12',event_format:'корпоратив',category:'Ведущий',budget_kzt:1300000,duration_hours:6,language:'русский'};
 const presets=[
   ['Ведущий · 12 окт.',base],
@@ -100,63 +123,13 @@ function renderCard(card,index){
   element('p',facts,article,'explanation');
   const source=(card.evidence||[]).find(item=>item.field==='description');
   if(source?.quote){const quote=element('blockquote','',article,'quote');element('span','Из профиля подрядчика',quote,'quote-label');element('span',`«${source.quote}»`,quote);}
+  if(card.tags){const tags=element('div','',article,'match-tags');for(const tag of card.tags)element('span',tag,tags);}
   const badges=element('div','',article,'badges');
   for(const label of card.provenance.labels){const kind=label.includes('Синтетический')?'synthetic':label.includes('проставлена')?'imputed':'';element('span',label,badges,`badge ${kind}`.trim());}
-  const calendarButton=element('button','Добавить в Google Calendar',article,'suggestion');
-calendarButton.type='button';
-
-calendarButton.addEventListener('click',async()=>{
-  const originalText=calendarButton.textContent;
-  calendarButton.disabled=true;
-  calendarButton.textContent='Добавляем…';
-
-  try{
-    const eventDate=form.elements.namedItem('event_date').value;
-    const duration=Number(form.elements.namedItem('duration_hours').value)||2;
-    const start=new Date(`${eventDate}T18:00:00+05:00`);
-    const end=new Date(start.getTime()+duration*60*60*1000);
-
-    const body={
-      title:`EventMatch — ${card.name}`,
-      start_time:start.toISOString(),
-      end_time:end.toISOString(),
-      description:`Подрядчик: ${card.name}\nКатегория: ${card.category}\nЦена от: ${money(card.price_from_kzt)} ₸`,
-      location:card.city
-    };
-
-    const response=await fetch('/calendar/event',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(body)
-    });
-
-    const result=await response.json();
-
-    if(!response.ok){
-      throw new Error(result.message||'Ошибка Google Calendar');
-    }
-
-    calendarButton.textContent='✓ Добавлено в Google Calendar';
-
-    if(result.event?.link){
-      window.open(result.event.link,'_blank');
-    }
-
-  }catch(error){
-    calendarButton.textContent='Ошибка — попробовать снова';
-    calendarButton.disabled=false;
-    alert(error.message);
-    return;
-  }
-
-  setTimeout(()=>{
-    calendarButton.disabled=false;
-    calendarButton.textContent=originalText;
-  },5000);
-});
-return article;
+  return article;
 }
 function renderResult(result){
+  if(result.session_id)sessionId=result.session_id;
   const content=document.getElementById('result-content');content.replaceChildren();
   const debug=document.getElementById('debug');debug.hidden=false;
   document.getElementById('trace').textContent=JSON.stringify(result,null,2);
@@ -165,6 +138,18 @@ function renderResult(result){
   const kicker=document.getElementById('result-kicker');
   const count=document.getElementById('result-count');
   const announcement=document.getElementById('announcement');
+  if(result.metadata?.execution_mode)document.getElementById('mode').textContent=`Режим: ${result.metadata.execution_mode} · ${result.metadata.explanation_mode||'проверяемые источники'}`;
+  if(result.status==='explanation'){renderResult(result.result);element('p',result.message,document.getElementById('result-content'),'summary');return;}
+  if(result.status==='compared'){
+    title.textContent='Сравнение дат';kicker.textContent='Все остальные условия одинаковы';count.textContent='Две даты';
+    for(const item of result.results){const section=element('section','',content,'compare-section');element('h3',item.normalized_request.event_date,section);element('p',item.summary,section,'summary');item.cards.forEach((card,index)=>section.append(renderCard(card,index)));for(const suggestion of item.suggestions)element('p',suggestion.message,section);}
+    const changes=result.changes.filter(c=>c.reason==='availability_changed'||c.reason==='top3_displacement');
+    element('h3','Почему изменилась выдача',content);if(!changes.length)element('p','Состав top-3 на этих датах одинаков.',content);for(const change of changes)element('p',change.message,content);
+    element('p',result.results[0].price_note,content,'fine-print');return;
+  }
+  if(result.status==='clarification'||result.status==='technical_error'){
+    title.textContent=result.status==='clarification'?'Уточним заказ':'Не удалось выполнить запрос';kicker.textContent='';count.textContent='';element('p',result.message,content,'summary');return;
+  }
   if(result.status==='matched'){
     title.textContent=`Подобрали ${result.cards.length} ${result.cards.length===1?'вариант':result.cards.length<5?'варианта':'вариантов'}`;
     kicker.textContent='Сравните цену и основания в профилях';
@@ -172,6 +157,8 @@ function renderResult(result){
     element('p',result.summary,content,'summary');
     const cards=element('div','',content,'cards');
     result.cards.forEach((card,index)=>cards.append(renderCard(card,index)));
+    if(result.explanation_note)element('p',result.explanation_note,content,'summary');
+    element('p',result.price_note,content,'fine-print');
     announcement.textContent=`Подобрали ${result.cards.length} варианта. ${result.summary}`;
     return;
   }
@@ -186,20 +173,32 @@ function renderResult(result){
 }
 async function init(){
   const response=await fetch('/metadata');if(!response.ok)throw new Error('Не удалось загрузить каталог');const meta=await response.json();
+  document.getElementById('mode').textContent=`Ранжирование: ${meta.ranking.mode}. ${meta.openai_configured?'OpenAI настроен на сервере.':'OpenAI не настроен: доступен структурированный ввод в форме.'}`;
   for(const [key,values] of Object.entries({city:meta.cities,category:meta.categories,event_format:meta.event_formats,language:meta.languages}))for(const value of values){const option=element('option',value,form.elements.namedItem(key));option.value=value;}
   for(const [title,request] of presets){const button=element('button',title,document.getElementById('presets'),'scenario');button.type='button';button.addEventListener('click',()=>{fill(request);form.requestSubmit();});}
   fill(base);
 }
 form.addEventListener('submit',async event=>{
-  event.preventDefault();const submit=document.getElementById('submit');submit.disabled=true;submit.textContent='Проверяем условия…';
+  event.preventDefault();if(requestPending)return;setPending(true);const submit=document.getElementById('submit');submit.textContent='Проверяем условия…';
   document.getElementById('result-title').textContent='Проверяем каталог';document.getElementById('result-kicker').textContent='Сначала дата и обязательные условия, затем объяснения';document.getElementById('result-count').textContent='';
   document.getElementById('result-panel').setAttribute('aria-busy','true');document.getElementById('debug').hidden=true;
   const content=document.getElementById('result-content');content.replaceChildren();element('div','Проверяем доступность и условия заказа…',content,'empty-state loading');
   try{
-    const request=Object.fromEntries(new FormData(form));request.budget_kzt=Number(request.budget_kzt);request.duration_hours=request.duration_hours?Number(request.duration_hours):null;request.language=request.language||null;
-    const response=await fetch('/recommend',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(request)});const result=await response.json();if(!response.ok)throw new Error(result.message||'Не удалось выполнить подбор');renderResult(result);
+    const response=await fetch('/recommend',{method:'POST',headers:headers(),body:JSON.stringify(currentRequest())});const result=await response.json();if(!response.ok)throw new Error(result.message||'Не удалось выполнить подбор');renderResult(result);
   }catch(error){document.getElementById('result-title').textContent='Не удалось выполнить запрос';document.getElementById('result-kicker').textContent='Проверьте введённые данные и соединение';document.getElementById('result-count').textContent='';content.replaceChildren();element('p',error.message,content,'summary');document.getElementById('result-panel').setAttribute('aria-busy','false');}
-  finally{submit.disabled=false;submit.innerHTML='Показать подходящих <span aria-hidden="true">→</span>';}
+  finally{setPending(false);submit.innerHTML='Показать подходящих <span aria-hidden="true">→</span>';}
+});
+document.getElementById('chat-form').addEventListener('submit',async event=>{
+  event.preventDefault();if(requestPending)return;setPending(true);const input=document.getElementById('message');const message=input.value.trim();const log=document.getElementById('chat-log');element('p',message,log,'user-message');
+  try{const response=await fetch('/chat',{method:'POST',headers:headers(),body:JSON.stringify({message,session_id:sessionId})});const result=await response.json();if(result.session_id)sessionId=result.session_id;if(!response.ok&&!result.status)throw new Error(result.message);if(result.order)fill(result.order);renderResult(result);element('p',result.message||result.summary||'Сравнение дат готово.',log);input.value='';}
+  catch(error){element('p',error.message,log);}
+  finally{setPending(false);log.scrollTop=log.scrollHeight;}
+});
+document.getElementById('compare').addEventListener('click',async()=>{
+  if(requestPending||!form.reportValidity())return;const date_b=document.getElementById('date_b').value;if(!date_b){document.getElementById('date_b').focus();return;}setPending(true);
+  try{const request=currentRequest();const response=await fetch('/compare-dates',{method:'POST',headers:headers(),body:JSON.stringify({request,date_a:request.event_date,date_b})});const result=await response.json();if(!response.ok)throw new Error(result.message);renderResult(result);}
+  catch(error){renderResult({status:'technical_error',message:error.message});}
+  finally{setPending(false);}
 });
 init().catch(error=>{document.getElementById('result-title').textContent='Не удалось загрузить каталог';document.getElementById('result-kicker').textContent=error.message;});
 </script>

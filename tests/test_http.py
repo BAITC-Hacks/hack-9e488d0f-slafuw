@@ -4,15 +4,20 @@ import threading
 import unittest
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
+from types import SimpleNamespace
 
+from eventmatch.agent import EventMatchAgent
 from eventmatch.catalog import ROOT, load_catalog
 from eventmatch.server import handler_for
+from eventmatch.service import EventMatchService
 
 
 class HTTPTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), handler_for(load_catalog()))
+        cls.service = EventMatchService(load_catalog())
+        agent = EventMatchAgent(cls.service, SimpleNamespace(configured=False, model="not-called"))
+        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), handler_for(cls.service.catalog, cls.service, agent))
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.thread.start()
         cls.base = f"http://127.0.0.1:{cls.server.server_port}"
@@ -22,9 +27,10 @@ class HTTPTest(unittest.TestCase):
         cls.server.shutdown()
         cls.server.server_close()
         cls.thread.join(timeout=5)
+        cls.service.store.close()
 
-    def post(self, data):
-        request = Request(self.base + "/recommend", data=data,
+    def post(self, data, path="/recommend"):
+        request = Request(self.base + path, data=data,
                           headers={"Content-Type": "application/json"})
         return urlopen(request, timeout=5)
 
@@ -59,6 +65,32 @@ class HTTPTest(unittest.TestCase):
                 self.post(payload)
             self.assertEqual(caught.exception.code, 422)
             self.assertTrue(json.load(caught.exception)["message"])
+
+    def test_chat_provider_failure_is_503_not_empty_match(self):
+        with self.assertRaises(HTTPError) as caught:
+            self.post(json.dumps({"message": "Нужен ведущий"}).encode(), "/chat")
+        self.assertEqual(caught.exception.code, 503)
+        result = json.load(caught.exception)
+        self.assertEqual(result["status"], "technical_error")
+        self.assertNotIn("cards", result)
+        self.assertEqual(result["metadata"]["openai"]["mode"], "not_called")
+
+    def test_comparison_and_persisted_trace(self):
+        request = json.loads((ROOT / "examples/01-dense.json").read_text(encoding="utf-8"))
+        body = {"request": request, "date_a": "2026-10-12", "date_b": "2026-10-13"}
+        with self.post(json.dumps(body).encode(), "/compare-dates") as response:
+            result = json.load(response)
+        self.assertEqual(result["status"], "compared")
+        self.assertEqual(len(result["results"]), 2)
+        self.assertIn("HK-27222", result["appeared_ids"])
+        with urlopen(self.base + "/traces/" + result["trace_id"], timeout=5) as response:
+            self.assertEqual(json.load(response)["actions"], result["actions"])
+
+    def test_unknown_result_finalization_is_422(self):
+        body = {"result_id": "unknown", "explanation_plan": {"cards": []}}
+        with self.assertRaises(HTTPError) as caught:
+            self.post(json.dumps(body).encode(), "/finalize-result")
+        self.assertEqual(caught.exception.code, 422)
 
 
 if __name__ == "__main__":
