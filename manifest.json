@@ -1,0 +1,15 @@
+{
+  "source_filename": "hackathon dataset anonymized .csv",
+  "source_format": "organizer CSV, pipe-separated array fields",
+  "source_sha256": "6a724b6b7dfb5973343e68ba18dadb60fc807d87e3d78f03ee86fb26cb089f7d",
+  "canonical_file": "data/raw/hackathon-dataset-anonymized.jsonl",
+  "canonical_sha256": "cf6ca82fbd7a94bfaceb70e1d100344560c18786e3bbd1e649b0f8997204a527",
+  "profile_count": 66,
+  "team_added_profiles": 0,
+  "transformations": [
+    "CSV arrays split on |",
+    "strict boolean parsing",
+    "numeric price and max_hours; empty max_hours -> null",
+    "sort by id; UTF-8 JSONL with LF; descriptions preserved"
+  ]
+}

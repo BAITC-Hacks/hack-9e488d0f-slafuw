@@ -1,0 +1,120 @@
+{
+  "status": "no_match",
+  "summary": "Кандидатов в городе и категории: 10; ни один не проходит все условия. Причины исключения (каждый профиль учтён один раз): заняты на дату — 9; не берут выбранный формат — 1. Только из-за занятости на 2026-12-12 исключены 3 (Буллма, Джинбей, Кики); без проверки даты прошли бы 3.",
+  "request": {
+    "city": "Алматы",
+    "event_date": "2026-12-12",
+    "event_format": "корпоратив",
+    "category": "Ведущий",
+    "budget_kzt": 1300000,
+    "duration_hours": 6,
+    "language": "английский"
+  },
+  "cards": [],
+  "diagnostics": {
+    "cohort_count": 10,
+    "eligible_count": 0,
+    "shown_count": 0,
+    "primary_exclusions": {
+      "busy": 9,
+      "budget": 0,
+      "format": 1,
+      "language": 0,
+      "duration": 0
+    },
+    "all_exclusions": {
+      "busy": 9,
+      "budget": 1,
+      "format": 1,
+      "language": 7,
+      "duration": 0
+    },
+    "blocked_only_by_date": 3,
+    "eligible_ignoring_date": 3,
+    "rejected": [
+      {
+        "id": "HK-27222",
+        "reasons": [
+          "busy",
+          "language"
+        ]
+      },
+      {
+        "id": "HK-29829",
+        "reasons": [
+          "busy",
+          "language"
+        ]
+      },
+      {
+        "id": "HK-35215",
+        "reasons": [
+          "busy"
+        ]
+      },
+      {
+        "id": "HK-42352",
+        "reasons": [
+          "format",
+          "language"
+        ]
+      },
+      {
+        "id": "HK-44733",
+        "reasons": [
+          "busy"
+        ]
+      },
+      {
+        "id": "HK-44923",
+        "reasons": [
+          "busy",
+          "language"
+        ]
+      },
+      {
+        "id": "HK-72938",
+        "reasons": [
+          "busy",
+          "budget",
+          "language"
+        ]
+      },
+      {
+        "id": "HK-75012",
+        "reasons": [
+          "busy"
+        ]
+      },
+      {
+        "id": "HK-77838",
+        "reasons": [
+          "busy",
+          "language"
+        ]
+      },
+      {
+        "id": "HK-88430",
+        "reasons": [
+          "busy",
+          "language"
+        ]
+      }
+    ]
+  },
+  "suggestions": [
+    {
+      "field": "event_date",
+      "value": "2026-12-13",
+      "eligible_count": 1,
+      "message": "На 2026-12-13 пройдут 1; остальные условия те же"
+    }
+  ],
+  "price_note": "Цена «от» — нижняя граница за мероприятие, итоговая смета неизвестна.",
+  "meta": {
+    "dataset_sha256": "cf6ca82fbd7a94bfaceb70e1d100344560c18786e3bbd1e649b0f8997204a527",
+    "policy_version": "rules-lexical-v1",
+    "request_fingerprint": "0a546e1cf11ce8801bacd970e3edf0c360043f99a4d6bc03dcf5b691a2cd4e45",
+    "explanation_mode": "extractive-lexical"
+  }
+}

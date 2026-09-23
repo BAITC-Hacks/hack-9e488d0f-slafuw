@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f4f2ec">
+<title>EventMatch — подбор подрядчиков</title>
+<style>
+:root{color-scheme:light;--paper:#f4f2ec;--surface:#fffefa;--ink:#202923;--muted:#68716b;--line:#dcded5;--green:#255c46;--green-soft:#e8f0e9;--gold:#c08a3e;--red:#9f483f;--red-soft:#f7ebe7;--blue:#315d70;--shadow:0 14px 38px #2533290d}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 Inter,"Segoe UI",Arial,sans-serif}button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #7aa58c;outline-offset:2px}.shell{max-width:1240px;margin:auto;padding:0 28px 56px}.topbar{height:76px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}.brand{display:flex;align-items:center;gap:11px;font-size:17px;font-weight:750;letter-spacing:-.04em}.brand-mark{width:34px;height:34px;display:grid;place-items:center;background:var(--green);color:white;border-radius:11px;font:700 18px Georgia,serif}.brand small{display:block;color:var(--muted);font-size:11px;font-weight:500;letter-spacing:.02em}.top-note{font-size:12px;color:var(--muted)}.hero{padding:32px 0 25px;display:flex;align-items:end;justify-content:space-between;gap:30px}.eyebrow{margin:0 0 7px;color:var(--green);font-size:11px;font-weight:750;letter-spacing:.12em;text-transform:uppercase}.hero h1{margin:0;font:500 clamp(28px,4vw,42px)/1.12 Georgia,"Times New Roman",serif;letter-spacing:-.035em}.hero-copy{max-width:410px;margin:0;color:var(--muted);font-size:14px}.workspace{display:grid;grid-template-columns:minmax(285px,350px) minmax(0,1fr);gap:24px;align-items:start}.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}.request-panel{padding:23px;position:sticky;top:16px}.panel-heading{display:flex;align-items:start;justify-content:space-between;gap:12px;margin-bottom:20px}.panel-heading h2{margin:0;font-size:17px;letter-spacing:-.02em}.step{color:#829087;font-size:11px;font-weight:700;letter-spacing:.1em}.field{display:grid;gap:6px;margin:0 0 14px}.field label,.field-label{font-size:12px;font-weight:700}.field input,.field select{width:100%;min-height:43px;padding:9px 11px;color:var(--ink);background:#fff;border:1px solid #d8dbd2;border-radius:8px}.field input::placeholder{color:#929992}.field select{appearance:auto}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 11px}.optional{margin:0 0 18px;border-top:1px solid #ebebe5;border-bottom:1px solid #ebebe5}.optional summary{padding:12px 0;color:var(--green);font-size:12px;font-weight:700;cursor:pointer}.optional .field-grid{padding-bottom:2px}.submit{width:100%;min-height:47px;margin-top:2px;border:0;border-radius:9px;background:var(--green);color:white;font-size:14px;font-weight:700;transition:background .15s,transform .15s}.submit:hover{background:#1b4937;transform:translateY(-1px)}.submit:disabled{opacity:.65;cursor:wait;transform:none}.fine-print{margin:12px 0 0;color:var(--muted);font-size:11px;line-height:1.5}.scenarios{margin-top:20px;padding-top:17px;border-top:1px solid #ebebe5}.scenarios-title{margin:0 0 10px;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}.scenario-list{display:flex;flex-wrap:wrap;gap:7px}.scenario{padding:7px 10px;border:1px solid var(--line);border-radius:99px;background:transparent;color:#39483f;font-size:11px;transition:.15s}.scenario:hover{border-color:#82a28c;background:var(--green-soft)}.main-column{min-width:0}.result-panel{min-height:465px;padding:24px}.result-head{display:flex;align-items:start;justify-content:space-between;gap:16px;padding-bottom:18px;border-bottom:1px solid #ebebe5}.result-heading{display:flex;gap:13px;align-items:start}.result-icon{width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:11px;background:var(--green-soft);color:var(--green);font-size:16px}.result-title{margin:0;font-size:18px;letter-spacing:-.025em}.result-kicker{margin:2px 0 0;color:var(--muted);font-size:12px}.result-count{flex:none;padding:5px 9px;border:1px solid var(--line);border-radius:99px;color:#59665e;font-size:11px;font-weight:650}.summary{margin:16px 0 18px;color:#47524b;font-size:13px;line-height:1.65}.empty-state{min-height:325px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px}.empty-symbol{width:54px;height:54px;display:grid;place-items:center;margin-bottom:15px;border:1px solid var(--line);border-radius:17px;color:var(--green);font:24px Georgia,serif}.empty-state h3{margin:0 0 6px;font:500 21px Georgia,serif}.empty-state p{max-width:370px;margin:0;color:var(--muted);font-size:13px}.cards{display:grid;gap:13px}.contractor{padding:17px 18px;border:1px solid var(--line);border-radius:12px;background:#fff;animation:appear .24s ease both}.contractor:nth-child(2){animation-delay:.04s}.contractor:nth-child(3){animation-delay:.08s}@keyframes appear{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}.card-top{display:flex;align-items:start;justify-content:space-between;gap:15px}.rank-name{display:flex;align-items:start;gap:11px;min-width:0}.rank{width:26px;height:26px;flex:none;display:grid;place-items:center;border-radius:8px;background:#f0f1eb;color:var(--green);font:700 12px Georgia,serif}.contractor h3{margin:0;font:600 19px/1.2 Georgia,"Times New Roman",serif;letter-spacing:-.02em}.card-subtitle{margin:4px 0 0;color:var(--muted);font-size:11px}.price{text-align:right;white-space:nowrap;font-size:17px;font-weight:750;letter-spacing:-.03em}.price small{display:block;color:var(--muted);font-size:10px;font-weight:500;letter-spacing:0}.reason-label{margin:17px 0 6px;color:var(--green);font-size:10px;font-weight:750;letter-spacing:.1em;text-transform:uppercase}.explanation{margin:0;color:#39443d;font-size:13px;line-height:1.65}.quote{position:relative;margin:11px 0 0;padding:10px 12px 10px 15px;border-left:2px solid #a4bea8;background:#f6f7f2;color:#4b574e;font:italic 13px/1.55 Georgia,"Times New Roman",serif}.quote-label{display:block;margin-bottom:3px;color:#7c887d;font:700 9px/1.4 Inter,"Segoe UI",Arial,sans-serif;letter-spacing:.1em;text-transform:uppercase}.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.badge{padding:4px 8px;border-radius:5px;background:#f0f2ec;color:#5a665d;font-size:10px}.badge.synthetic{background:#f6eddd;color:#805f2b}.badge.imputed{background:#f4eee4;color:#856440}.outcome{margin-top:17px;padding:17px 18px;border:1px solid #e4c8bd;border-radius:11px;background:var(--red-soft)}.outcome.no-category{border-color:#c9d5d7;background:#edf2f2}.outcome h3{margin:0 0 5px;color:var(--red);font-size:15px}.outcome.no-category h3{color:var(--blue)}.outcome p{margin:0;color:#5c514d;font-size:12px;line-height:1.6}.outcome.no-category p{color:#4a5b61}.suggestions{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}.suggestion{padding:8px 11px;border:1px solid #c99884;border-radius:8px;background:#fff9f5;color:#763d32;font-size:11px;font-weight:650;text-align:left}.suggestion:hover{background:white}.trace{margin-top:15px;border-top:1px solid #ebebe5}.trace summary{padding:12px 0 0;color:var(--muted);font-size:11px;cursor:pointer}.trace pre{max-height:270px;overflow:auto;padding:12px;border-radius:8px;background:#f4f4ef;color:#425046;font-size:10px;white-space:pre-wrap;overflow-wrap:anywhere}.loading{color:var(--muted)}.footer{display:flex;justify-content:space-between;gap:18px;margin-top:17px;color:var(--muted);font-size:10px}.footer span:last-child{text-align:right}#announcement{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:850px){.shell{padding-right:20px;padding-left:20px}.workspace{grid-template-columns:minmax(260px,320px) minmax(0,1fr);gap:16px}.request-panel,.result-panel{padding:18px}.hero-copy{max-width:340px}}
+@media(max-width:680px){.shell{padding:0 15px 34px}.topbar{height:64px}.top-note{max-width:150px;text-align:right;font-size:10px}.hero{display:block;padding:25px 0 19px}.hero h1{font-size:33px}.hero-copy{margin-top:9px;font-size:13px}.workspace{grid-template-columns:1fr;gap:14px}.request-panel{position:static;padding:18px}.field-grid{grid-template-columns:1fr 1fr}.result-panel{min-height:330px;padding:17px}.result-head{gap:8px}.result-title{font-size:16px}.empty-state{min-height:240px;padding:22px}.contractor{padding:15px}.contractor h3{font-size:18px}.price{font-size:15px}.footer{display:block}.footer span{display:block}.footer span:last-child{text-align:left;margin-top:3px}}
+@media(max-width:380px){.shell{padding-right:11px;padding-left:11px}.field-grid{grid-template-columns:1fr}.request-panel{padding:15px}.card-top{gap:8px}.rank-name{gap:8px}.result-count{font-size:10px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+<style>
+.agent-panel{padding:20px 23px;margin-bottom:22px}.agent-panel h2{margin:0 0 8px;font-size:17px}.chat-row{display:flex;gap:12px;align-items:end}.chat-row .field{flex:1;margin:0}.chat-row button{width:auto;min-width:130px}.chat-row textarea{font:inherit;resize:vertical;min-height:76px;width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:white}.chat-log{max-height:260px;overflow:auto;white-space:pre-wrap}.chat-log p{margin:10px 0;padding:9px 12px;background:var(--green-soft);border-radius:8px}.chat-log .user-message{background:#f1f0e9}.comparison{padding-top:16px;border-top:1px solid var(--line);margin-top:16px}.comparison button{width:100%;padding:8px;border:1px solid var(--green);border-radius:8px;background:var(--green-soft);color:var(--green)}.mode{font-size:12px;color:var(--muted);margin:8px 0}.compare-section{margin:18px 0;border-top:1px solid var(--line)}.match-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.match-tags span{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:2px 6px}@media(max-width:680px){.chat-row{display:block}.chat-row button{margin-top:10px;width:100%}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">e</span><span>eventmatch<small>подрядчики для вашего события</small></span></div>
+    <div class="top-note">Подбор по каталогу Алматы и Астаны</div>
+  </header>
+  <section class="hero" aria-labelledby="page-title">
+    <div><p class="eyebrow">Меньше поиска · больше ясности</p><h1 id="page-title">Найдём тех, кто подходит</h1></div>
+    <p class="hero-copy">Укажите условия заказа. Мы проверим свободную дату и покажем до трёх вариантов с конкретными причинами выбора.</p>
+  </section>
+
+  <section class="panel agent-panel" aria-labelledby="agent-title">
+    <h2 id="agent-title">Опишите заказ своими словами</h2>
+    <p class="mode" id="mode">Проверяем режим сервиса…</p>
+    <div class="chat-log" id="chat-log" role="log" aria-live="polite"></div>
+    <form id="chat-form" class="chat-row">
+      <div class="field"><label for="message">Сообщение агенту</label><textarea id="message" maxlength="6000" required placeholder="Нужен ведущий в Алматы на корпоратив 12 октября 2026, бюджет 1,3 млн тенге, на 6 часов, русский язык"></textarea></div>
+      <button class="submit" id="chat-submit" type="submit">Отправить →</button>
+    </form>
+    <p class="fine-print">Можно изменить одно условие или спросить «почему эти варианты?». Год даты укажите явно; язык и часы — по желанию.</p>
+  </section>
+
+  <main class="workspace">
+    <aside class="panel request-panel" aria-labelledby="request-title">
+      <div class="panel-heading"><h2 id="request-title">Параметры события</h2><span class="step">01 / ЗАПРОС</span></div>
+      <form id="form">
+        <div class="field"><label for="city">Город</label><select id="city" name="city" required></select></div>
+        <div class="field"><label for="event_date">Дата события</label><input id="event_date" name="event_date" type="date" min="2026-09-23" max="2026-12-31" required></div>
+        <div class="field-grid">
+          <div class="field"><label for="event_format">Тип события</label><select id="event_format" name="event_format" required></select></div>
+          <div class="field"><label for="category">Подрядчик</label><select id="category" name="category" required></select></div>
+        </div>
+        <div class="field"><label for="budget_kzt">Бюджет на подрядчика, ₸</label><input id="budget_kzt" name="budget_kzt" type="number" min="1" step="1" inputmode="numeric" placeholder="Например, 500 000" required></div>
+        <details class="optional">
+          <summary>Дополнительные условия <span class="muted">· по желанию</span></summary>
+          <div class="field-grid">
+            <div class="field"><label for="duration_hours">Сколько часов на площадке</label><input id="duration_hours" name="duration_hours" type="number" min="0.1" step="any" inputmode="decimal" placeholder="Не важно"></div>
+            <div class="field"><label for="language">Язык работы</label><select id="language" name="language"><option value="">Не важно</option></select></div>
+          </div>
+        </details>
+        <button class="submit" type="submit" id="submit">Показать подходящих <span aria-hidden="true">→</span></button>
+      </form>
+      <div class="comparison">
+        <div class="field"><label for="date_b">Вторая дата для сравнения</label><input id="date_b" type="date" min="2026-09-23" max="2026-12-31" value="2026-10-13"></div>
+        <button type="button" id="compare">Сравнить две даты</button>
+      </div>
+      <p class="fine-print">Цена «от» — минимальная стоимость в каталоге, не итоговая смета. Подбор не бронирует дату.</p>
+      <div class="scenarios">
+        <p class="scenarios-title">Посмотреть на примерах</p>
+        <div class="scenario-list" id="presets"></div>
+      </div>
+    </aside>
+
+    <section class="main-column" aria-label="Результат подбора">
+      <div class="panel result-panel" aria-live="polite" aria-busy="false" id="result-panel">
+        <div class="result-head">
+          <div class="result-heading"><span class="result-icon" aria-hidden="true">✳</span><div><h2 class="result-title" id="result-title">Результат подбора</h2><p class="result-kicker" id="result-kicker">Карточки появятся здесь после запроса</p></div></div>
+          <span class="result-count" id="result-count">До 3 вариантов</span>
+        </div>
+        <div id="result-content">
+          <div class="empty-state"><span class="empty-symbol" aria-hidden="true">⌕</span><h3>Сначала задайте условия</h3><p>Мы не расширяем каталог, а помогаем выбрать из подрядчиков вашего города.</p></div>
+        </div>
+        <details class="trace" id="debug" hidden><summary>Подробности проверки и источники данных</summary><pre id="trace"></pre></details>
+      </div>
+      <div class="footer"><span>Доступность проверяется по календарю каталога: 23.09–31.12.2026.</span><span>Объяснения основаны на данных профиля, а не на независимой проверке подрядчика.</span></div>
+    </section>
+  </main>
+  <p id="announcement" role="status" aria-live="polite"></p>
+</div>
+<script>
+const form=document.getElementById('form');
+let sessionId=null;
+let requestPending=false;
+function headers(){return {'Content-Type':'application/json',...(sessionId?{'X-EventMatch-Session':sessionId}:{})};}
+function currentRequest(){const request=Object.fromEntries(new FormData(form));request.budget_kzt=Number(request.budget_kzt);request.duration_hours=request.duration_hours?Number(request.duration_hours):null;request.language=request.language||null;return request;}
+function setPending(value){requestPending=value;for(const id of ['submit','chat-submit','compare'])document.getElementById(id).disabled=value;}
+const base={city:'Алматы',event_date:'2026-10-12',event_format:'корпоратив',category:'Ведущий',budget_kzt:1300000,duration_hours:6,language:'русский'};
+const presets=[
+  ['Ведущий · 12 окт.',base],
+  ['Та же заявка · 13 окт.',{...base,event_date:'2026-10-13'}],
+  ['Флорист · редкая категория',{...base,category:'Флорист',event_format:'свадьба',budget_kzt:300000,duration_hours:8}],
+  ['Заняты на дату',{...base,event_date:'2026-12-12',language:'английский'}],
+  ['Нет такой категории',{...base,city:'Астана',category:'Декоратор',budget_kzt:3000000}],
+  ['Банкетный зал',{...base,event_date:'2026-11-14',category:'Банкетный зал',event_format:'свадьба',budget_kzt:4000000,duration_hours:8}]
+];
+function element(tag,text,parent,className){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(className)node.className=className;parent.append(node);return node;}
+function fill(request){for(const [key,value] of Object.entries(request)){const field=form.elements.namedItem(key);if(field)field.value=value??'';}}
+function money(value){return Number(value).toLocaleString('ru-RU');}
+function renderCard(card,index){
+  const article=document.createElement('article');article.className='contractor';
+  const top=element('div','',article,'card-top');
+  const rankName=element('div','',top,'rank-name');
+  element('span',String(index+1).padStart(2,'0'),rankName,'rank');
+  const titleWrap=element('div','',rankName);
+  element('h3',card.name,titleWrap);
+  element('p',`${card.category} · ${card.city}`,titleWrap,'card-subtitle');
+  const price=element('div','',top,'price');
+  element('span',`${money(card.price_from_kzt)} ₸`,price);
+  element('small','цена от',price);
+  element('p','Почему подходит',article,'reason-label');
+  const marker=' В описании профиля: ';
+  const splitAt=card.explanation.indexOf(marker);
+  const facts=splitAt>=0?card.explanation.slice(0,splitAt):card.explanation;
+  element('p',facts,article,'explanation');
+  const source=(card.evidence||[]).find(item=>item.field==='description');
+  if(source?.quote){const quote=element('blockquote','',article,'quote');element('span','Из профиля подрядчика',quote,'quote-label');element('span',`«${source.quote}»`,quote);}
+  if(card.tags){const tags=element('div','',article,'match-tags');for(const tag of card.tags)element('span',tag,tags);}
+  const badges=element('div','',article,'badges');
+  for(const label of card.provenance.labels){const kind=label.includes('Синтетический')?'synthetic':label.includes('проставлена')?'imputed':'';element('span',label,badges,`badge ${kind}`.trim());}
+  return article;
+}
+function renderResult(result){
+  if(result.session_id)sessionId=result.session_id;
+  const content=document.getElementById('result-content');content.replaceChildren();
+  const debug=document.getElementById('debug');debug.hidden=false;
+  document.getElementById('trace').textContent=JSON.stringify(result,null,2);
+  document.getElementById('result-panel').setAttribute('aria-busy','false');
+  const title=document.getElementById('result-title');
+  const kicker=document.getElementById('result-kicker');
+  const count=document.getElementById('result-count');
+  const announcement=document.getElementById('announcement');
+  if(result.metadata?.execution_mode)document.getElementById('mode').textContent=`Режим: ${result.metadata.execution_mode} · ${result.metadata.explanation_mode||'проверяемые источники'}`;
+  if(result.status==='explanation'){renderResult(result.result);element('p',result.message,document.getElementById('result-content'),'summary');return;}
+  if(result.status==='compared'){
+    title.textContent='Сравнение дат';kicker.textContent='Все остальные условия одинаковы';count.textContent='Две даты';
+    for(const item of result.results){const section=element('section','',content,'compare-section');element('h3',item.normalized_request.event_date,section);element('p',item.summary,section,'summary');item.cards.forEach((card,index)=>section.append(renderCard(card,index)));for(const suggestion of item.suggestions)element('p',suggestion.message,section);}
+    const changes=result.changes.filter(c=>c.reason==='availability_changed'||c.reason==='top3_displacement');
+    element('h3','Почему изменилась выдача',content);if(!changes.length)element('p','Состав top-3 на этих датах одинаков.',content);for(const change of changes)element('p',change.message,content);
+    element('p',result.results[0].price_note,content,'fine-print');return;
+  }
+  if(result.status==='clarification'||result.status==='technical_error'){
+    title.textContent=result.status==='clarification'?'Уточним заказ':'Не удалось выполнить запрос';kicker.textContent='';count.textContent='';element('p',result.message,content,'summary');return;
+  }
+  if(result.status==='matched'){
+    title.textContent=`Подобрали ${result.cards.length} ${result.cards.length===1?'вариант':result.cards.length<5?'варианта':'вариантов'}`;
+    kicker.textContent='Сравните цену и основания в профилях';
+    count.textContent=`${result.diagnostics.eligible_count} подходят`;
+    element('p',result.summary,content,'summary');
+    const cards=element('div','',content,'cards');
+    result.cards.forEach((card,index)=>cards.append(renderCard(card,index)));
+    if(result.explanation_note)element('p',result.explanation_note,content,'summary');
+    element('p',result.price_note,content,'fine-print');
+    announcement.textContent=`Подобрали ${result.cards.length} варианта. ${result.summary}`;
+    return;
+  }
+  title.textContent=result.status==='no_category_in_city'?'Категории нет в этом городе':'Подходящих вариантов нет';
+  kicker.textContent=result.status==='no_category_in_city'?'Проверьте город или выберите другую категорию':'Кандидаты есть, но условия не совпали';
+  count.textContent=result.status==='no_category_in_city'?'Нет в каталоге':`${result.diagnostics.cohort_count} в каталоге`;
+  const outcome=element('div','',content,`outcome ${result.status==='no_category_in_city'?'no-category':''}`.trim());
+  element('h3',result.status==='no_category_in_city'?'В каталоге такого города этой категории нет':'Никто не проходит все условия',outcome);
+  element('p',result.summary,outcome);
+  if(result.suggestions.length){const actions=element('div','',outcome,'suggestions');for(const suggestion of result.suggestions){const button=element('button',suggestion.message,actions,'suggestion');button.type='button';button.addEventListener('click',()=>{const field=form.elements.namedItem(suggestion.field);field.value=suggestion.value;form.requestSubmit();});}}
+  announcement.textContent=title.textContent+'. '+result.summary;
+}
+async function init(){
+  const response=await fetch('/metadata');if(!response.ok)throw new Error('Не удалось загрузить каталог');const meta=await response.json();
+  document.getElementById('mode').textContent=`Ранжирование: ${meta.ranking.mode}. ${meta.openai_configured?'OpenAI настроен на сервере.':'OpenAI не настроен: доступен структурированный ввод в форме.'}`;
+  for(const [key,values] of Object.entries({city:meta.cities,category:meta.categories,event_format:meta.event_formats,language:meta.languages}))for(const value of values){const option=element('option',value,form.elements.namedItem(key));option.value=value;}
+  for(const [title,request] of presets){const button=element('button',title,document.getElementById('presets'),'scenario');button.type='button';button.addEventListener('click',()=>{fill(request);form.requestSubmit();});}
+  fill(base);
+}
+form.addEventListener('submit',async event=>{
+  event.preventDefault();if(requestPending)return;setPending(true);const submit=document.getElementById('submit');submit.textContent='Проверяем условия…';
+  document.getElementById('result-title').textContent='Проверяем каталог';document.getElementById('result-kicker').textContent='Сначала дата и обязательные условия, затем объяснения';document.getElementById('result-count').textContent='';
+  document.getElementById('result-panel').setAttribute('aria-busy','true');document.getElementById('debug').hidden=true;
+  const content=document.getElementById('result-content');content.replaceChildren();element('div','Проверяем доступность и условия заказа…',content,'empty-state loading');
+  try{
+    const response=await fetch('/recommend',{method:'POST',headers:headers(),body:JSON.stringify(currentRequest())});const result=await response.json();if(!response.ok)throw new Error(result.message||'Не удалось выполнить подбор');renderResult(result);
+  }catch(error){document.getElementById('result-title').textContent='Не удалось выполнить запрос';document.getElementById('result-kicker').textContent='Проверьте введённые данные и соединение';document.getElementById('result-count').textContent='';content.replaceChildren();element('p',error.message,content,'summary');document.getElementById('result-panel').setAttribute('aria-busy','false');}
+  finally{setPending(false);submit.innerHTML='Показать подходящих <span aria-hidden="true">→</span>';}
+});
+document.getElementById('chat-form').addEventListener('submit',async event=>{
+  event.preventDefault();if(requestPending)return;setPending(true);const input=document.getElementById('message');const message=input.value.trim();const log=document.getElementById('chat-log');element('p',message,log,'user-message');
+  try{const response=await fetch('/chat',{method:'POST',headers:headers(),body:JSON.stringify({message,session_id:sessionId})});const result=await response.json();if(result.session_id)sessionId=result.session_id;if(!response.ok&&!result.status)throw new Error(result.message);if(result.order)fill(result.order);renderResult(result);element('p',result.message||result.summary||'Сравнение дат готово.',log);input.value='';}
+  catch(error){element('p',error.message,log);}
+  finally{setPending(false);log.scrollTop=log.scrollHeight;}
+});
+document.getElementById('compare').addEventListener('click',async()=>{
+  if(requestPending||!form.reportValidity())return;const date_b=document.getElementById('date_b').value;if(!date_b){document.getElementById('date_b').focus();return;}setPending(true);
+  try{const request=currentRequest();const response=await fetch('/compare-dates',{method:'POST',headers:headers(),body:JSON.stringify({request,date_a:request.event_date,date_b})});const result=await response.json();if(!response.ok)throw new Error(result.message);renderResult(result);}
+  catch(error){renderResult({status:'technical_error',message:error.message});}
+  finally{setPending(false);}
+});
+init().catch(error=>{document.getElementById('result-title').textContent='Не удалось загрузить каталог';document.getElementById('result-kicker').textContent=error.message;});
+</script>
+</body>
+</html>

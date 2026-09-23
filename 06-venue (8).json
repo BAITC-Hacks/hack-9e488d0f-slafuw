@@ -1,0 +1,206 @@
+{
+  "status": "matched",
+  "summary": "Подобрали 2; всем условиям соответствуют 2 из 7. Причины исключения (каждый профиль учтён один раз): заняты на дату — 5. Только из-за занятости на 2026-11-14 исключены 2 (Дарквнесс, Шинобу Кочо); без проверки даты прошли бы 4.",
+  "request": {
+    "city": "Алматы",
+    "event_date": "2026-11-14",
+    "event_format": "свадьба",
+    "category": "Банкетный зал",
+    "budget_kzt": 4000000,
+    "duration_hours": 8,
+    "language": "русский"
+  },
+  "cards": [
+    {
+      "id": "HK-64395",
+      "name": "Иноскэ Хашибира",
+      "category": "Банкетный зал",
+      "categories": [
+        "Банкетный зал",
+        "Загородная площадка",
+        "Ресторан"
+      ],
+      "city": "Алматы",
+      "price_from_kzt": 2500000,
+      "explanation": "На 2026-11-14 нет занятости в календаре; формат «свадьба» указан; цена от 2 500 000 ₸ при бюджете 4 000 000 ₸; язык — русский; до 8 ч при запросе 8 ч. В описании профиля: «Nerima Terrace – стильная панорамная локация в Алматы с захватывающим видом на город и горы».",
+      "evidence": [
+        {
+          "field": "busy_dates",
+          "operator": "not_contains",
+          "value": "2026-11-14"
+        },
+        {
+          "field": "event_formats",
+          "operator": "contains",
+          "value": "свадьба"
+        },
+        {
+          "field": "price_from_kzt",
+          "value": 2500000,
+          "budget_kzt": 4000000
+        },
+        {
+          "field": "languages",
+          "value": [
+            "русский",
+            "английский"
+          ],
+          "requested": "русский"
+        },
+        {
+          "field": "max_hours",
+          "value": 8.0,
+          "requested": 8
+        },
+        {
+          "field": "description",
+          "start": 0,
+          "end": 91,
+          "quote": "Nerima Terrace – стильная панорамная локация в Алматы с захватывающим видом на город и горы"
+        }
+      ],
+      "ranking": {
+        "lexical_hits": [],
+        "price_tiebreak_kzt": 2500000,
+        "id_tiebreak": "HK-64395"
+      },
+      "provenance": {
+        "synthetic": false,
+        "city_imputed": true,
+        "price_imputed": true,
+        "labels": [
+          "Исходный анонимизированный профиль",
+          "Цена проставлена при подготовке датасета",
+          "Город проставлен при подготовке датасета"
+        ]
+      }
+    },
+    {
+      "id": "HK-90011",
+      "name": "Гохан",
+      "category": "Банкетный зал",
+      "categories": [
+        "Банкетный зал",
+        "Отель",
+        "Ресторан"
+      ],
+      "city": "Алматы",
+      "price_from_kzt": 3200000,
+      "explanation": "На 2026-11-14 нет занятости в календаре; формат «свадьба» указан; цена от 3 200 000 ₸ при бюджете 4 000 000 ₸; язык — русский; до 8 ч при запросе 8 ч. В описании профиля: «Панорамные окна, вместимость зала до 200 гостей, свой кейтеринг и парковка для гостей мероприятия».",
+      "evidence": [
+        {
+          "field": "busy_dates",
+          "operator": "not_contains",
+          "value": "2026-11-14"
+        },
+        {
+          "field": "event_formats",
+          "operator": "contains",
+          "value": "свадьба"
+        },
+        {
+          "field": "price_from_kzt",
+          "value": 3200000,
+          "budget_kzt": 4000000
+        },
+        {
+          "field": "languages",
+          "value": [
+            "казахский",
+            "русский"
+          ],
+          "requested": "русский"
+        },
+        {
+          "field": "max_hours",
+          "value": 8.0,
+          "requested": 8
+        },
+        {
+          "field": "description",
+          "start": 73,
+          "end": 170,
+          "quote": "Панорамные окна, вместимость зала до 200 гостей, свой кейтеринг и парковка для гостей мероприятия"
+        }
+      ],
+      "ranking": {
+        "lexical_hits": [],
+        "price_tiebreak_kzt": 3200000,
+        "id_tiebreak": "HK-90011"
+      },
+      "provenance": {
+        "synthetic": true,
+        "city_imputed": false,
+        "price_imputed": true,
+        "labels": [
+          "Синтетический профиль организаторов",
+          "Цена проставлена при подготовке датасета"
+        ]
+      }
+    }
+  ],
+  "diagnostics": {
+    "cohort_count": 7,
+    "eligible_count": 2,
+    "shown_count": 2,
+    "primary_exclusions": {
+      "busy": 5,
+      "budget": 0,
+      "format": 0,
+      "language": 0,
+      "duration": 0
+    },
+    "all_exclusions": {
+      "busy": 5,
+      "budget": 1,
+      "format": 1,
+      "language": 0,
+      "duration": 1
+    },
+    "blocked_only_by_date": 2,
+    "eligible_ignoring_date": 4,
+    "rejected": [
+      {
+        "id": "HK-50695",
+        "reasons": [
+          "busy",
+          "duration"
+        ]
+      },
+      {
+        "id": "HK-58236",
+        "reasons": [
+          "busy"
+        ]
+      },
+      {
+        "id": "HK-69010",
+        "reasons": [
+          "busy"
+        ]
+      },
+      {
+        "id": "HK-72785",
+        "reasons": [
+          "busy",
+          "budget"
+        ]
+      },
+      {
+        "id": "HK-99701",
+        "reasons": [
+          "busy",
+          "format"
+        ]
+      }
+    ]
+  },
+  "suggestions": [],
+  "price_note": "Цена «от» — нижняя граница за мероприятие, итоговая смета неизвестна.",
+  "meta": {
+    "dataset_sha256": "cf6ca82fbd7a94bfaceb70e1d100344560c18786e3bbd1e649b0f8997204a527",
+    "policy_version": "rules-lexical-v1",
+    "request_fingerprint": "edd0574151d22faec51c0c7ace14f87195a7ef41e04eaa769cc09d1245bc0047",
+    "explanation_mode": "extractive-lexical"
+  }
+}
