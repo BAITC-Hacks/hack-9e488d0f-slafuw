@@ -330,7 +330,53 @@ function renderCard(card,index){
 
         calendarStatus.append(' · ',link);
       }
+      if(result.event?.id){
+        const deleteButton=element(
+          'button',
+          'Удалить из Calendar',
+          calendarBox,
+          'calendar-button'
+        );
 
+        deleteButton.type='button';
+
+        deleteButton.addEventListener('click',async()=>{
+          deleteButton.disabled=true;
+          deleteButton.textContent='Удаляем…';
+
+          try{
+            const response=await fetch(
+              `/calendar/event/${encodeURIComponent(result.event.id)}`,
+              {
+                method:'DELETE',
+                headers:headers()
+              }
+            );
+
+            const deleteResult=await response.json();
+
+            if(!response.ok){
+              throw new Error(
+                deleteResult.message ||
+                'Не удалось удалить событие'
+              );
+            }
+
+            calendarStatus.textContent=
+              'Событие удалено из календаря ✓';
+
+            deleteButton.remove();
+
+          }catch(error){
+            calendarStatus.textContent=
+              `Ошибка удаления: ${error.message}`;
+
+            deleteButton.disabled=false;
+            deleteButton.textContent=
+              'Удалить из Calendar';
+          }
+        });
+      }
     }catch(error){
       calendarStatus.textContent=`Ошибка: ${error.message}`;
     }finally{

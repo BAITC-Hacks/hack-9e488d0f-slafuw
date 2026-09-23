@@ -64,8 +64,7 @@ def get_calendar_service():
 
 def test_connection():
     """
-    Проверяет, что EventMatch имеет доступ
-    к событиям Google Calendar.
+    Проверяет подключение к Google Calendar.
     """
 
     service = get_calendar_service()
@@ -80,27 +79,26 @@ def test_connection():
     print("Доступ к событиям получен.")
 
 
-def create_event(title, start_time, end_time, description="", location=""):
+def create_event(
+    title,
+    start_time,
+    end_time,
+    description="",
+    location=""
+):
     """
     Создаёт событие в основном Google Calendar.
-
-    start_time и end_time:
-    например '2026-09-25T18:00:00+05:00'
     """
 
     service = get_calendar_service()
 
     event = {
         "summary": title,
-
         "description": description,
-
         "location": location,
-
         "start": {
             "dateTime": start_time
         },
-
         "end": {
             "dateTime": end_time
         }
@@ -115,6 +113,27 @@ def create_event(title, start_time, end_time, description="", location=""):
         "id": created_event.get("id"),
         "title": created_event.get("summary"),
         "link": created_event.get("htmlLink")
+    }
+
+
+def delete_event(event_id):
+    """
+    Удаляет событие из Google Calendar.
+    """
+
+    if not event_id:
+        raise ValueError("Не указан ID события")
+
+    service = get_calendar_service()
+
+    service.events().delete(
+        calendarId="primary",
+        eventId=event_id
+    ).execute()
+
+    return {
+        "id": event_id,
+        "status": "deleted"
     }
 
 
