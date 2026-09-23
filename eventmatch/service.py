@@ -2,16 +2,18 @@
 
 from copy import deepcopy
 from dataclasses import replace
+from itertools import product
+import json
 import os
 from time import monotonic
 
 from .catalog import ROOT
-from .engine import failures, money, normalize, recommend, tokens
+from .engine import evidence_terms, failures, money, normalize, recommend, useful_evidence
 from .models import END, FORMATS, LANGUAGES, START, Request, iso_date
 from .semantic import BaselineRanker, SemanticRanker, digest, fragments
 from .storage import Store
 
-SERVICE_VERSION = "eventmatch-agent-v1"
+SERVICE_VERSION = "eventmatch-agent-v2"
 
 
 def facts_for(profile, request):
@@ -22,10 +24,12 @@ def facts_for(profile, request):
         ("date", "busy_dates", request.event_date,
          f"на {request.event_date} в известном календаре нет указанной занятости"),
         ("languages", "languages", list(profile.languages),
-         "языки работы: " + ", ".join(profile.languages)),
+         f"требуемый язык «{request.language}» указан; также: " + ", ".join(profile.languages)
+         if request.language else "языки работы: " + ", ".join(profile.languages)),
         ("hours", "max_hours", profile.max_hours,
          "ограничение по часам присутствия неприменимо" if profile.max_hours is None
-         else f"время присутствия — до {profile.max_hours:g} ч"),
+         else f"до {profile.max_hours:g} ч при запросе {request.duration_hours:g} ч"
+         if request.duration_hours is not None else f"до {profile.max_hours:g} ч"),
     ]
     return [{"fact_id": f"{profile.id}:{key}", "profile_id": profile.id, "field": field,
              "value": value, "text": text} for key, field, value, text in values]
@@ -102,7 +106,8 @@ class EventMatchService:
         for card in result["cards"]:
             profile = self.by_id[card["id"]]
             card["facts"] = facts_for(profile, normalized)
-            parts = fragments(profile)
+            parts = [part for part in fragments(profile)
+                     if useful_evidence(part["quote"], normalized.event_format)]
             parts.sort(key=lambda part: (-self.ranker.evidence_score(part, normalized), part["start"]))
             card["available_evidence"] = parts
             card["ranking"] = {"score_int": self.ranker.score(profile, normalized),
@@ -130,22 +135,60 @@ class EventMatchService:
         return result
 
     def default_plan(self, result):
-        selected = []
-        used_words = set()
-        for card in result["cards"]:
-            request = Request.parse(result["normalized_request"])
-            # Consider all selected cards together. Prefer relevant, non-repeated vocabulary.
-            def key(part):
-                words = tokens(part["quote"])
-                overlap = len(words & used_words) / max(1, len(words))
-                return (-self.ranker.evidence_score(part, request), overlap, part["start"])
-            part = min(card["available_evidence"], key=key, default=None)
-            if part:
-                used_words.update(tokens(part["quote"]))
-            selected.append({"profile_id": card["id"],
-                             "fact_ids": [card["id"] + ":format", card["id"] + ":price"],
-                             "evidence_id": part["evidence_id"] if part else None})
-        return {"cards": selected}
+        request = Request.parse(result["normalized_request"])
+        cards = result["cards"]
+        candidate_sets = []
+        for card in cards:
+            parts = card["available_evidence"]
+            if parts:
+                best_score = max(self.ranker.evidence_score(part, request) for part in parts)
+                tied = [part for part in parts
+                        if self.ranker.evidence_score(part, request) == best_score]
+                tied.sort(key=lambda part: (-len(evidence_terms(part["quote"])), part["start"],
+                                            part["evidence_id"]))
+                candidate_sets.append(tied[:8])
+            else:
+                candidate_sets.append([None])
+
+        def diversity_key(assignment):
+            words = [evidence_terms(part["quote"]) if part else set() for part in assignment]
+            overlap = sum(len(left & right) / max(1, len(left | right))
+                          for index, left in enumerate(words) for right in words[index + 1:])
+            unique = 0
+            for index, current in enumerate(words):
+                other_words = set()
+                for other_index, other in enumerate(words):
+                    if other_index != index:
+                        other_words.update(other)
+                unique += len(current - other_words) / max(1, len(current))
+            return (overlap, -unique, sum(len(part["quote"]) for part in assignment if part),
+                    tuple(part["evidence_id"] if part else "" for part in assignment))
+
+        evidence_assignment = min(product(*candidate_sets), key=diversity_key) if cards else ()
+        secondary_fields = []
+        if request.duration_hours is not None:
+            secondary_fields.append("hours")
+        if request.language is not None:
+            secondary_fields.append("languages")
+        secondary_fields.extend(("format", "date"))
+        fact_maps = [{fact["fact_id"].rsplit(":", 1)[-1]: fact for fact in card["facts"]}
+                     for card in cards]
+
+        def distinct_values(field):
+            return len({json.dumps(facts[field]["value"], ensure_ascii=False, sort_keys=True)
+                        for facts in fact_maps})
+
+        second_field = max(
+            secondary_fields,
+            key=lambda field: (distinct_values(field), -secondary_fields.index(field)),
+        )
+        return {"cards": [{
+            "profile_id": card["id"],
+            "fact_ids": [fact_maps[index]["price"]["fact_id"],
+                         fact_maps[index][second_field]["fact_id"]],
+            "evidence_id": evidence_assignment[index]["evidence_id"]
+            if evidence_assignment[index] else None,
+        } for index, card in enumerate(cards)]}
 
     def _assemble(self, result, plan):
         if not isinstance(plan, dict) or set(plan) != {"cards"} or not isinstance(plan["cards"], list):
@@ -161,6 +204,7 @@ class EventMatchService:
         if len(set(ids)) != len(ids) or set(ids) != {c["id"] for c in result["cards"]}:
             raise ValueError("Нельзя добавлять, удалять или дублировать подрядчиков")
         by_id = {p["profile_id"]: p for p in plan["cards"]}
+        event_format = Request.parse(result["normalized_request"]).event_format
         for card in result["cards"]:  # Snapshot order, never plan order.
             chosen = by_id[card["id"]]
             facts = {f["fact_id"]: f for f in card["facts"]}
@@ -173,6 +217,9 @@ class EventMatchService:
             evidence_id = chosen["evidence_id"]
             if evidence_id is not None and (not isinstance(evidence_id, str) or evidence_id not in parts):
                 raise ValueError("Цитата принадлежит другому профилю или неизвестна")
+            if (evidence_id is not None
+                    and not useful_evidence(parts[evidence_id]["quote"], event_format)):
+                raise ValueError("Цитата не содержит полезного основания или противоречит формату")
             text = "; ".join(facts[fid]["text"] for fid in fact_ids)
             text = text[0].upper() + text[1:] + "."
             part = parts.get(evidence_id)
