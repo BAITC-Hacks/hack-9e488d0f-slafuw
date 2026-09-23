@@ -1,3 +1,5 @@
+> Документ исходного baseline v0.1. Текущая реализация и статус интеграций: [AGENT_API.md](AGENT_API.md).
+
 # Контракт локального API
 
 Запуск: `python -m eventmatch serve`, base URL `http://127.0.0.1:8000`.

@@ -7,12 +7,13 @@ from urllib.request import Request, urlopen
 
 from eventmatch.catalog import ROOT, load_catalog
 from eventmatch.server import handler_for
+from eventmatch.config import Settings
 
 
 class HTTPTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), handler_for(load_catalog()))
+        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), handler_for(load_catalog(), Settings(database=":memory:")))
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.thread.start()
         cls.base = f"http://127.0.0.1:{cls.server.server_port}"
@@ -22,6 +23,7 @@ class HTTPTest(unittest.TestCase):
         cls.server.shutdown()
         cls.server.server_close()
         cls.thread.join(timeout=5)
+        cls.server.RequestHandlerClass.service.store.close()
 
     def post(self, data):
         request = Request(self.base + "/recommend", data=data,
@@ -59,6 +61,30 @@ class HTTPTest(unittest.TestCase):
                 self.post(payload)
             self.assertEqual(caught.exception.code, 422)
             self.assertTrue(json.load(caught.exception)["message"])
+
+    def test_compare_and_finalize_http_contracts(self):
+        base = json.loads((ROOT / "examples/01-dense.json").read_text())
+        data = {"request": base, "date_a": "2026-10-12", "date_b": "2026-10-13"}
+        with urlopen(Request(self.base + "/compare-dates", data=json.dumps(data).encode(),
+                     headers={"Content-Type": "application/json"}), timeout=5) as response:
+            result = json.load(response)
+        self.assertEqual(result["status"], "compared")
+        first = result["results"][0]
+        plan = self.server.RequestHandlerClass.service.default_plan(first)
+        data = {"result_id": first["result_id"], "explanation_plan": plan}
+        with urlopen(Request(self.base + "/finalize-result", data=json.dumps(data).encode(),
+                     headers={"Content-Type": "application/json"}), timeout=5) as response:
+            self.assertEqual(json.load(response)["cards"], first["cards"])
+
+    def test_chat_without_key_is_explicit_503(self):
+        request = Request(self.base + "/chat", data=b'{"message":"hello"}',
+                          headers={"Content-Type": "application/json"})
+        with self.assertRaises(HTTPError) as caught:
+            urlopen(request, timeout=5)
+        self.assertEqual(caught.exception.code, 503)
+        result = json.load(caught.exception)
+        self.assertEqual(result["status"], "agent_unavailable")
+        self.assertNotIn("cards", result)
 
 
 if __name__ == "__main__":
