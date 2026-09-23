@@ -102,7 +102,59 @@ function renderCard(card,index){
   if(source?.quote){const quote=element('blockquote','',article,'quote');element('span','Из профиля подрядчика',quote,'quote-label');element('span',`«${source.quote}»`,quote);}
   const badges=element('div','',article,'badges');
   for(const label of card.provenance.labels){const kind=label.includes('Синтетический')?'synthetic':label.includes('проставлена')?'imputed':'';element('span',label,badges,`badge ${kind}`.trim());}
-  return article;
+  const calendarButton=element('button','Добавить в Google Calendar',article,'suggestion');
+calendarButton.type='button';
+
+calendarButton.addEventListener('click',async()=>{
+  const originalText=calendarButton.textContent;
+  calendarButton.disabled=true;
+  calendarButton.textContent='Добавляем…';
+
+  try{
+    const eventDate=form.elements.namedItem('event_date').value;
+    const duration=Number(form.elements.namedItem('duration_hours').value)||2;
+    const start=new Date(`${eventDate}T18:00:00+05:00`);
+    const end=new Date(start.getTime()+duration*60*60*1000);
+
+    const body={
+      title:`EventMatch — ${card.name}`,
+      start_time:start.toISOString(),
+      end_time:end.toISOString(),
+      description:`Подрядчик: ${card.name}\nКатегория: ${card.category}\nЦена от: ${money(card.price_from_kzt)} ₸`,
+      location:card.city
+    };
+
+    const response=await fetch('/calendar/event',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+
+    const result=await response.json();
+
+    if(!response.ok){
+      throw new Error(result.message||'Ошибка Google Calendar');
+    }
+
+    calendarButton.textContent='✓ Добавлено в Google Calendar';
+
+    if(result.event?.link){
+      window.open(result.event.link,'_blank');
+    }
+
+  }catch(error){
+    calendarButton.textContent='Ошибка — попробовать снова';
+    calendarButton.disabled=false;
+    alert(error.message);
+    return;
+  }
+
+  setTimeout(()=>{
+    calendarButton.disabled=false;
+    calendarButton.textContent=originalText;
+  },5000);
+});
+return article;
 }
 function renderResult(result){
   const content=document.getElementById('result-content');content.replaceChildren();
