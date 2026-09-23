@@ -1,0 +1,44 @@
+{
+  "status": "no_category_in_city",
+  "summary": "В каталоге города «Астана» нет категории «Декоратор».",
+  "request": {
+    "city": "Астана",
+    "event_date": "2026-10-12",
+    "event_format": "корпоратив",
+    "category": "Декоратор",
+    "budget_kzt": 3000000,
+    "duration_hours": 6,
+    "language": "русский"
+  },
+  "cards": [],
+  "diagnostics": {
+    "cohort_count": 0,
+    "eligible_count": 0,
+    "shown_count": 0,
+    "primary_exclusions": {
+      "busy": 0,
+      "budget": 0,
+      "format": 0,
+      "language": 0,
+      "duration": 0
+    },
+    "all_exclusions": {
+      "busy": 0,
+      "budget": 0,
+      "format": 0,
+      "language": 0,
+      "duration": 0
+    },
+    "blocked_only_by_date": 0,
+    "eligible_ignoring_date": 0,
+    "rejected": []
+  },
+  "suggestions": [],
+  "price_note": "Цена «от» — нижняя граница за мероприятие, итоговая смета неизвестна.",
+  "meta": {
+    "dataset_sha256": "cf6ca82fbd7a94bfaceb70e1d100344560c18786e3bbd1e649b0f8997204a527",
+    "policy_version": "rules-lexical-v1",
+    "request_fingerprint": "d75f280770a13d70e1968664a14e965ff5ba90434e075ca88949f1756337eb51",
+    "explanation_mode": "extractive-lexical"
+  }
+}

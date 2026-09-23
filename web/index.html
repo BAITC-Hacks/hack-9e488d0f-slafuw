@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EventMatch — три варианта с основаниями</title>
+<style>
+body{font:16px/1.5 system-ui,sans-serif;max-width:1040px;margin:32px auto;padding:0 18px;color:#172b36;background:#f5f7fa}
+h1{margin-bottom:4px}p{margin-top:6px}form,.card{background:white;padding:20px;border:1px solid #d8dfe6;border-radius:10px}
+form{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:14px}label{display:flex;flex-direction:column;gap:4px}
+input,select,button{font:inherit;padding:8px;border:1px solid #aab9c6;border-radius:6px}button{cursor:pointer;background:#174a69;color:white}
+button:disabled{opacity:.6}.card{margin:14px 0}.tag{display:inline-block;font-size:13px;background:#eef1fa;padding:3px 7px;border-radius:5px;margin:3px}
+#summary{white-space:pre-line}pre{overflow:auto;font-size:12px}details{margin:12px 0}.muted{color:#526573}.presets{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+</style>
+<h1>EventMatch</h1>
+<p class="muted">До трёх подрядчиков из каталога вашего города. У каждого — проверяемые основания.</p>
+<div class="presets" id="presets"></div>
+<form id="form">
+<label>Город<select name="city" required></select></label>
+<label>Дата<input name="event_date" type="date" value="2026-10-12" min="2026-09-23" max="2026-12-31" required></label>
+<label>Тип мероприятия<select name="event_format" required></select></label>
+<label>Категория<select name="category" required></select></label>
+<label>Бюджет на подрядчика, ₸<input name="budget_kzt" type="number" min="1" step="1" value="1300000" required></label>
+<label>Часы работы подрядчика<input name="duration_hours" type="number" min="0.1" step="any" placeholder="Не задано"></label>
+<label>Язык<select name="language"><option value="">Не задан</option></select></label>
+<button type="submit" id="submit">Подобрать</button>
+</form>
+<p class="muted">Календарь: 23.09–31.12.2026. Цена «от» за мероприятие, итоговая смета неизвестна.</p>
+<section aria-live="polite"><h2 id="status"></h2><p id="summary"></p><div id="cards"></div><div id="suggestions"></div></section>
+<details id="debug" hidden><summary>Как получен ответ: причины исключения и источники</summary><pre id="trace"></pre></details>
+<script>
+const form=document.getElementById('form');
+const base={city:'Алматы',event_date:'2026-10-12',event_format:'корпоратив',category:'Ведущий',budget_kzt:1300000,duration_hours:6,language:'русский'};
+const presets=[['Ведущие · 12 октября',base],['Та же заявка · 13 октября',{...base,event_date:'2026-10-13'}],['Редкая категория',{...base,category:'Флорист',event_format:'свадьба',budget_kzt:300000,duration_hours:8}],['Все подходящие заняты',{...base,event_date:'2026-12-12',language:'английский'}],['Категории нет',{...base,city:'Астана',category:'Декоратор',budget_kzt:3000000}],['Зал · 14 ноября',{...base,event_date:'2026-11-14',category:'Банкетный зал',event_format:'свадьба',budget_kzt:4000000,duration_hours:8}]];
+function element(tag,text,parent,className){const el=document.createElement(tag);el.textContent=text;if(className)el.className=className;parent.append(el);return el;}
+function fill(request){for(const [key,value] of Object.entries(request))form.elements.namedItem(key).value=value??'';}
+async function init(){
+  const response=await fetch('/metadata');if(!response.ok)throw new Error('Не удалось загрузить каталог');const meta=await response.json();
+  for(const [key,values] of Object.entries({city:meta.cities,category:meta.categories,event_format:meta.event_formats,language:meta.languages}))
+    for(const value of values){const option=element('option',value,form.elements.namedItem(key));option.value=value;}
+  for(const [title,request] of presets){const button=element('button',title,document.getElementById('presets'));button.type='button';button.onclick=()=>{fill(request);form.requestSubmit();};}
+  fill(base);
+}
+form.addEventListener('submit',async event=>{
+  event.preventDefault();const submit=document.getElementById('submit');submit.disabled=true;
+  document.getElementById('status').textContent='Подбираем…';document.getElementById('summary').textContent='';
+  const cards=document.getElementById('cards');cards.replaceChildren();const suggestions=document.getElementById('suggestions');suggestions.replaceChildren();document.getElementById('debug').hidden=true;
+  try{
+    const request=Object.fromEntries(new FormData(form));request.budget_kzt=Number(request.budget_kzt);request.duration_hours=request.duration_hours?Number(request.duration_hours):null;request.language=request.language||null;
+    const response=await fetch('/recommend',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(request)});const result=await response.json();if(!response.ok)throw new Error(result.message);
+    document.getElementById('status').textContent={matched:'Подобрали',no_category_in_city:'В этом городе такой категории нет',no_match:'Кандидаты есть, но условия не проходят'}[result.status];
+    document.getElementById('summary').textContent=result.summary;
+    for(const card of result.cards){const article=element('article','',cards,'card');element('h3',card.name,article);element('p',`${card.category} · ${card.city} · от ${card.price_from_kzt.toLocaleString('ru-RU')} ₸`,article);element('p',card.explanation,article);for(const label of card.provenance.labels)element('span',label,article,'tag');const detail=element('details','',article);element('summary','Источник объяснения',detail);element('pre',JSON.stringify(card.evidence,null,2),detail);}
+    for(const suggestion of result.suggestions)element('p',suggestion.message,suggestions);
+    document.getElementById('trace').textContent=JSON.stringify(result,null,2);document.getElementById('debug').hidden=false;
+  }catch(error){document.getElementById('status').textContent='Проверьте запрос';document.getElementById('summary').textContent=error.message;}
+  finally{submit.disabled=false;}
+});
+init().catch(error=>{document.getElementById('summary').textContent=error.message;});
+</script>
+</html>
