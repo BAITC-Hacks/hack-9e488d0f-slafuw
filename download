@@ -1,8 +1,0 @@
-# Google Calendar OAuth
-credentials.json
-token.json
-client_secret_*.json
-*.egg-info/
-
-__pycache__/
-*.py[cod]
